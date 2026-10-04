@@ -6,9 +6,10 @@ from contextlib import contextmanager
 from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import Locator, Page, Response, sync_playwright
 
-from members import Member, save_photo
+from members import DATA_DIR, Member, save_photo
 
 DIRECTORY_URL = "https://directory.churchofjesuschrist.org"
+SIGN_IN_FILE = DATA_DIR / "sign_in.json"  # Browser cookies, so later runs skip signing in.
 
 # The directory site uses generated CSS class names, which can change whenever the
 # site is redeployed. If scraping stops working, these are the first thing to check.
@@ -23,13 +24,16 @@ DIALOG_CLOSE = "button.FLjuw"
 
 @contextmanager
 def open_directory() -> Iterator[Page]:
-    """Open the directory in a browser window and wait for the user to sign in there."""
+    """Open the directory in a browser window, waiting for the user to sign in if needed."""
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=False)
-        page = browser.new_page()
+        saved_sign_in = SIGN_IN_FILE if SIGN_IN_FILE.is_file() else None
+        page = browser.new_context(storage_state=saved_sign_in).new_page()
         page.goto(DIRECTORY_URL)
-        print("Sign in to your church account in the browser window.")
+        print("If the browser window asks, sign in to your church account there.")
         page.wait_for_selector(HOUSEHOLD_LINK, timeout=0)  # No time limit to sign in.
+        DATA_DIR.mkdir(exist_ok=True)
+        page.context.storage_state(path=SIGN_IN_FILE)
         yield page
 
 

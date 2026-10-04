@@ -5,7 +5,7 @@ from pathlib import Path
 
 from deck import write_deck
 from directory import list_households, open_directory, scrape_household
-from members import Member, load_households, save_households
+from members import Member, delete_unused_photos, load_households, save_households
 
 DECK_FILE = Path("members.apkg")
 BATCH_SIZE = 50  # Pause after this many households to avoid hitting rate limits.
@@ -34,6 +34,7 @@ def update_households(households: dict[str, list[Member]]) -> None:
         for household_id in moved_out:
             del households[household_id]
         save_households(households)
+        delete_unused_photos(households)
 
         new_ids = [h for h in household_links if h not in households]
         print(f"Found {len(household_links)} households; {len(new_ids)} new to scrape.")

@@ -61,3 +61,11 @@ def save_photo(name: str, photo: bytes) -> Path:
     PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
     image.save(path, format="JPEG", quality=85)
     return path
+
+
+def delete_unused_photos(households: dict[str, list[Member]]) -> None:
+    """Delete saved photos no member uses anymore, e.g. of households that moved out."""
+    used = {m.photo for members in households.values() for m in members}
+    for photo in PHOTOS_DIR.glob("*.jpg"):
+        if photo not in used:
+            photo.unlink()
