@@ -1,16 +1,32 @@
-generate an anki deck from your ward directory 
+# ward-flashcards
 
-just clone the repo and run `uv sync` 
-then activate the venv with `source .venv/bin/activate`
-then run `playwright install chromium`
-and finally you can run the flashcard generator with
-`python main.py`
+Generate an Anki deck of your ward members' photos and names from the church directory.
 
-it will prompt for your church account username and password and a name for the generated deck.
+## Setup
 
-It defaults to generating 50 cards at a time in hope of avoiding rate limits. It will prompt you to conitnue, just continue hitting enter until you've got cards generated for the whole ward.
+```sh
+uv sync
+uv run playwright install chromium
+```
 
+## Usage
 
+```sh
+uv run main.py
+```
 
+It asks for your church account username, password, and a name for the deck, then opens a
+browser, logs in, and scrapes the directory 50 households at a time to avoid rate limits.
+After each batch it writes `members.apkg` and asks whether to continue. Press enter until
+every household is done, then import `members.apkg` into Anki.
 
+Progress is saved to `data/` after every household, so if a run stops, the next run picks up
+where it left off. Running again later also adds anyone who has moved in. To start over
+(for example, to drop people who moved out), delete the `data/` folder.
 
+## Files
+
+- `main.py`: prompts, batching, and the run loop
+- `directory.py`: logs in and scrapes names and photos (the site's CSS selectors are at the top)
+- `members.py`: the `Member` type and the on-disk cache in `data/`
+- `deck.py`: card layout and writing the `.apkg`
