@@ -15,18 +15,18 @@ uv run playwright install chromium
 uv run main.py
 ```
 
-It asks for your church account username, password, and a name for the deck, then opens a
-browser, logs in, and scrapes the directory 50 households at a time to avoid rate limits.
-After each batch it writes `members.apkg` and asks whether to continue. Press enter until
-every household is done, then import `members.apkg` into Anki.
+It asks for a deck name, then opens a browser window. Sign in to your church account there
+(two-factor works too; your password never touches this script). It then scrapes every
+household, pausing for a minute after every 50 to avoid rate limits, and writes
+`members.apkg` for you to import into Anki.
 
-Progress is saved to `data/` after every household, so if a run stops, the next run picks up
-where it left off. Running again later also adds anyone who has moved in. To start over
-(for example, to drop people who moved out), delete the `data/` folder.
+Progress is saved to `data/` after every household. Press Ctrl-C at any time to stop: it
+still writes the deck with what it has, and the next run picks up where it left off.
+Run it again whenever the ward changes: it adds people who moved in and drops those who left.
 
 ## Files
 
-- `main.py`: prompts, batching, and the run loop
-- `directory.py`: logs in and scrapes names and photos (the site's CSS selectors are at the top)
+- `main.py`: the run: sync saved households with the directory, then write the deck
+- `directory.py`: opens the browser for sign-in and scrapes names and photos (the site's CSS selectors are at the top)
 - `members.py`: the `Member` type and the on-disk cache in `data/`
 - `deck.py`: card layout and writing the `.apkg`

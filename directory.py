@@ -1,6 +1,7 @@
 """Scrape member names and photos from directory.churchofjesuschrist.org."""
 
 from collections.abc import Iterator
+from contextlib import contextmanager
 
 from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import Locator, Page, Response, sync_playwright
@@ -20,36 +21,27 @@ PHOTO_VIEWER_CLOSE = "button.ghvXqF"
 DIALOG_CLOSE = "button.FLjuw"
 
 
-def scrape_households(
-    username: str, password: str, skip: set[str], limit: int
-) -> Iterator[tuple[str, list[Member]]]:
-    """Log in, then yield (household id, members) for up to `limit` households not in `skip`."""
+@contextmanager
+def open_directory() -> Iterator[Page]:
+    """Open the directory in a browser window and wait for the user to sign in there."""
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=False)
         page = browser.new_page()
-        log_in(page, username, password)
-
-        page.wait_for_selector(HOUSEHOLD_LINK)
-        household_links = page.locator(HOUSEHOLD_LINK)
-        scraped = 0
-        for i in range(household_links.count()):
-            if scraped == limit:
-                return
-            link = household_links.nth(i)
-            household_id = str(link.get_attribute("href"))
-            if household_id in skip:
-                continue
-            yield household_id, scrape_household(page, link)
-            scraped += 1
+        page.goto(DIRECTORY_URL)
+        print("Sign in to your church account in the browser window.")
+        page.wait_for_selector(HOUSEHOLD_LINK, timeout=0)  # No time limit to sign in.
+        yield page
 
 
-def log_in(page: Page, username: str, password: str) -> None:
-    page.goto(DIRECTORY_URL)
-    page.fill('input[name="username"]', username)
-    page.locator("#button-primary").click()
-    page.fill('input[name="password"]', password)
-    page.locator("#button-primary").click()
-    page.wait_for_selector("#signInMenu")
+def list_households(page: Page) -> dict[str, Locator]:
+    """Return {household id: link} for every household in the directory."""
+    links = page.locator(HOUSEHOLD_LINK)
+    # The list renders in pieces; wait until it stops growing so none are missed.
+    count = -1
+    while count != links.count():
+        count = links.count()
+        page.wait_for_timeout(1000)
+    return {str(links.nth(i).get_attribute("href")): links.nth(i) for i in range(count)}
 
 
 def scrape_household(page: Page, household_link: Locator) -> list[Member]:
