@@ -6,8 +6,10 @@ from pathlib import Path
 from deck import write_deck
 from directory import list_households, open_directory, scrape_household
 from members import Member, delete_unused_photos, load_households, save_households
+from printout import write_printout
 
 DECK_FILE = Path("members.apkg")
+PRINTOUT_FILE = Path("members.pdf")
 BATCH_SIZE = 50  # Pause after this many households to avoid hitting rate limits.
 PAUSE_SECONDS = 60
 
@@ -22,7 +24,9 @@ def main() -> None:
 
     members = [member for household in households.values() for member in household]
     write_deck(deck_name, members, DECK_FILE)
+    write_printout(members, PRINTOUT_FILE)
     print(f"Saved {len(members)} cards from {len(households)} households to {DECK_FILE}.")
+    print(f"Saved printable cards to {PRINTOUT_FILE}.")
 
 
 def update_households(households: dict[str, list[Member]]) -> None:
